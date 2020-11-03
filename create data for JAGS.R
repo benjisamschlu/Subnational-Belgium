@@ -196,8 +196,9 @@ for (k in seq_along(pro.names)) { # loop on 3rd dim of array
         
         for(i in 1:n) {
                 
+                # require to round() because poisson dist. do not allow for real numbers
                 # male
-                interpol <- (dth.int_m[, "1994", i, pro.name] + dth.int_m[, "1996", i, pro.name])/2
+                interpol <- round((dth.int_m[, "1994", i, pro.name] + dth.int_m[, "1996", i, pro.name])/2, 0)
                 it <- cbind(dth.int_m[, , i, pro.name], interpol)
                 colnames(it)[colnames(it) == "interpol"] <- 1995
                 dth_m[, , i, pro.name] <- it[, as.character(year.names)]
@@ -208,7 +209,7 @@ for (k in seq_along(pro.names)) { # loop on 3rd dim of array
                         dth_m[id, "1995", , pro.name] <- 0
                 }
                 # female
-                interpol <- (dth.int_f[, "1994", i, pro.name] + dth.int_f[, "1996", i, pro.name])/2
+                interpol <- round((dth.int_f[, "1994", i, pro.name] + dth.int_f[, "1996", i, pro.name])/2, 0)
                 it <- cbind(dth.int_f[, , i, pro.name], interpol)
                 colnames(it)[colnames(it) == "interpol"] <- 1995
                 dth_f[, , i, pro.name] <- it[, as.character(year.names)]
@@ -225,7 +226,7 @@ for (k in seq_along(pro.names)) { # loop on 3rd dim of array
 # ----- Merge last age groups to avoid issues --------------------------------------------------------------------------------------------------------------
 
 # If this step is not done, it creates Inf and Na values in mx
-for (k in seq_along(pro.names)) { # loop on 3rd dim of array
+for (k in seq_along(pro.names)) { # loop on 4th dim of array
         
         pro.name <- as.character(pro.names[k])
         n <- admin.pro$nber[admin.pro$province == pro.name]
@@ -237,15 +238,21 @@ for (k in seq_along(pro.names)) { # loop on 3rd dim of array
                         # 21 corresponds to age gp 95
                         exp_m[21, j, i, pro.name] <- sum(exp_m[21:22, j, i, pro.name])
                         exp_f[21, j, i, pro.name] <- sum(exp_f[21:22, j, i, pro.name])
+                }
+                for( j in 1:(y.lim+1) ) { # loop on all years 
+                        
                         dth_m[21, j, i, pro.name] <- sum(dth_m[21:22, j, i, pro.name])
                         dth_f[21, j, i, pro.name] <- sum(dth_f[21:22, j, i, pro.name])
+                        pop_m[21, j, i, pro.name] <- sum(pop_m[21:22, j, i, pro.name])
+                        pop_f[21, j, i, pro.name] <- sum(pop_f[21:22, j, i, pro.name])
                 }
         }
 }
 exp_m <- exp_m[-22, , , ]; exp_f <- exp_f[-22, , , ] 
-dth_m <- dth_m[-22, 1:y.lim, , ]; dth_f <- dth_f[-22, 1:y.lim, , ] 
+dth_m <- dth_m[-22, , , ]; dth_f <- dth_f[-22, , , ]
+pop_m <- pop_m[-22, , , ]; pop_f <- pop_f[-22, , , ]
 
-stopifnot(all(dim(exp_m) == dim(dth_m)))
+stopifnot(all(dim(pop_m) == dim(dth_m)))
 
 
 # ----- Save created data -----------------------------------------------------------------------------------------------------------------------------------------------
@@ -253,7 +260,11 @@ stopifnot(all(dim(exp_m) == dim(dth_m)))
 # nber of arr by province
 saveRDS(admin.pro, "./data/admin.pro.rda")
 
-# exposure
+# Due to poisson distribution, pop has to be interger -> not using exp
+saveRDS(pop_m, "./data/ArrPro_pop_m.rda")
+saveRDS(pop_f, "./data/ArrPro_pop_f.rda")
+
+# exposure (carreful exp has less cols than pop and dth)
 saveRDS(exp_m, "./data/ArrPro_exp_m.rda")
 saveRDS(exp_f, "./data/ArrPro_exp_f.rda")
 
